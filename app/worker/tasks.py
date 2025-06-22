@@ -11,7 +11,7 @@ from ..db.mongodb import MONGODB_POOL_SETTINGS
 
 
 @celery_app.task(bind=True)
-def process_image_task(self, task_id: str, model: str, provider_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+def process_video_task(self, task_id: str, model: str, provider_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
     """
     处理图像模型调用任务
     
@@ -24,7 +24,7 @@ def process_image_task(self, task_id: str, model: str, provider_name: str, param
     Returns:
         Dict[str, Any]: 任务结果
     """
-    logger.info(f"Processing image task {task_id} with model {model} and provider {provider_name}")
+    logger.info(f"Processing video task {task_id} with model {model} and provider {provider_name}")
     
     # 创建异步事件循环
     loop = asyncio.new_event_loop()

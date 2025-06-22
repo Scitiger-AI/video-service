@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import time
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from .api import api_router
 from .core.config import settings
@@ -11,6 +13,7 @@ from .core.logging import logger
 from .db.mongodb import init_mongodb
 from .middleware.auth import AuthMiddleware, PermissionMiddleware
 from .core.permissions import setup_permissions
+from .utils.helpers import FileUtils
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -27,10 +30,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"API测试路由: http://service.scitiger.cn/video-service/api/test/")
     logger.info(f"健康检查路由: http://service.scitiger.cn/video-service{settings.API_V1_STR}/health/")
     logger.info(f"任务创建路由: http://service.scitiger.cn/video-service{settings.API_V1_STR}/tasks/")
+    logger.info(f"静态媒体文件路径: http://127.0.0.1:8086/media/")
     
     # 初始化MongoDB
     await init_mongodb()
     logger.info("MongoDB连接初始化完成")
+    
+    # 初始化文件工具类
+    await FileUtils.setup()
+    logger.info("文件工具类初始化完成")
     
     # 初始化权限映射表
     setup_permissions(app)
@@ -66,6 +74,20 @@ app.add_middleware(PermissionMiddleware)
 
 # 添加认证中间件
 app.add_middleware(AuthMiddleware)
+
+# 检查静态文件目录是否存在，不存在则创建
+if not os.path.exists(settings.DATA_DIR):
+    logger.warning(f"静态媒体文件目录不存在: {settings.DATA_DIR}，尝试创建...")
+    try:
+        os.makedirs(settings.DATA_DIR, exist_ok=True)
+        logger.info(f"静态媒体文件目录创建成功: {settings.DATA_DIR}")
+    except Exception as e:
+        logger.error(f"创建静态媒体文件目录失败: {str(e)}")
+        raise RuntimeError(f"无法创建静态媒体文件目录 '{settings.DATA_DIR}': {str(e)}")
+    
+# 挂载静态文件目录
+app.mount("/media", StaticFiles(directory=settings.DATA_DIR), name="media")
+logger.info(f"静态媒体文件目录挂载成功: {settings.DATA_DIR} -> /media")
 
 # 添加详细的路由注册日志
 logger.info(f"开始注册API路由，前缀: {settings.API_V1_STR}")

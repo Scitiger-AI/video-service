@@ -3,6 +3,7 @@ from ..db.repositories.task_repository import TaskRepository
 from ..models.task import TaskStatus
 from .model_providers import get_provider
 from ..core.logging import logger
+from ..utils.helpers import FileUtils
 
 
 class TaskService:
@@ -92,12 +93,32 @@ class TaskService:
         if not task:
             return None
         
-        return {
+        result = {
             "task_id": task["_id"],
             "status": task["status"],
             "result": task.get("result"),
             "error": task.get("error")
         }
+        
+        # 转换结果中的文件路径为URL
+        if result.get("result") and isinstance(result["result"], dict) and "videos" in result["result"] and isinstance(result["result"]["videos"], list):
+            # 处理第一个视频作为主要结果
+            if len(result["result"]["videos"]) > 0 and "local_path" in result["result"]["videos"][0]:
+                main_video = result["result"]["videos"][0]
+                file_path = main_video["local_path"]
+                relative_url, download_url = FileUtils.get_urls_from_path(file_path)
+                result["result"]["file_url"] = relative_url
+                result["result"]["download_url"] = download_url
+            
+            # 处理所有视频
+            for video in result["result"]["videos"]:
+                if "local_path" in video:
+                    file_path = video["local_path"]
+                    relative_url, download_url = FileUtils.get_urls_from_path(file_path)
+                    video["file_url"] = relative_url
+                    video["download_url"] = download_url
+        
+        return result
     
     async def cancel_task(self, task_id: str) -> bool:
         """

@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "video-service"
     API_V1_STR: str = "/api"
     
+    # 服务基础URL配置
+    SERVICE_BASE_URL: str = "http://127.0.0.1:8086"
+    MEDIA_BASE_PATH: str = "/media"
+    
     # MongoDB配置
     MONGODB_URL: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "video_service"
@@ -83,6 +87,18 @@ class Settings(BaseSettings):
     def FULL_VERIFY_API_KEY_URL(self) -> str:
         """获取完整的API密钥验证URL"""
         return f"{self.AUTH_SERVICE_URL}{self.VERIFY_API_KEY_URL}"
+    
+    @computed_field
+    @property
+    def MEDIA_BASE_URL(self) -> str:
+        """获取媒体文件的基础URL"""
+        return f"{self.SERVICE_BASE_URL}{self.MEDIA_BASE_PATH}"
+        
+    @computed_field
+    @property
+    def MEDIA_DOWNLOAD_BASE_URL(self) -> str:
+        """获取媒体文件下载的基础URL"""
+        return f"{self.SERVICE_BASE_URL}{self.API_V1_STR}/download"
     
     @computed_field
     @property

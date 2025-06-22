@@ -6,7 +6,7 @@ from ..schemas.task import (
     TaskQuery, TaskListItem
 )
 from ..services.task_service import TaskService
-from ..worker.tasks import process_image_task
+from ..worker.tasks import process_video_task
 from ..core.security import get_current_user
 from ..core.permissions import requires_permission, permission_required
 from ..core.logging import logger
@@ -58,7 +58,7 @@ async def create_task(
         
         # 如果是异步任务，发送到Celery
         if task_data.is_async:
-            process_image_task.delay(
+            process_video_task.delay(
                 task_id=task_id,
                 model=task_data.model,
                 provider_name=task_data.provider,
@@ -66,7 +66,7 @@ async def create_task(
             )
         else:
             # 同步执行（不推荐）
-            process_image_task.apply(
+            process_video_task.apply(
                 args=[task_id, task_data.model, task_data.provider, task_data.parameters],
                 throw=True
             )

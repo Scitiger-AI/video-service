@@ -10,6 +10,7 @@ from ...core.config import settings
 from ...core.logging import logger
 from .base import ModelProvider
 from . import register_provider
+from pathlib import Path
 
 
 @register_provider
@@ -374,13 +375,13 @@ class AliyunProvider(ModelProvider):
             raise ValueError("Failed to find video URL in response")
             
         # 设置视频保存目录
-        video_dir = os.path.join(settings.DATA_DIR, "videos")
-        os.makedirs(video_dir, exist_ok=True)
+        videos_dir = Path(settings.DATA_DIR) / "videos" / "aliyun"
+        os.makedirs(videos_dir, exist_ok=True)
         
         # 生成唯一文件名
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = f"aliyun_{timestamp}_0_{uuid.uuid4().hex[:8]}.mp4"
-        local_path = os.path.join(video_dir, file_name)
+        local_path = str(videos_dir / file_name)
         
         # 下载视频
         saved_path = await self.download_video(video_url, local_path)

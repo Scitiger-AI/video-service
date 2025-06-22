@@ -137,8 +137,24 @@ def should_skip_auth(request: Request) -> bool:
     skip_paths = ["/docs", "/redoc", "/openapi.json",
                   f"{settings.API_V1_STR}/openapi.json",
                   f"{settings.API_V1_STR}/health",
-                  f"{settings.API_V1_STR}/test"]
-    return request.method == "OPTIONS" or request.url.path in skip_paths
+                  f"{settings.API_V1_STR}/test",
+                  f"{settings.API_V1_STR}/download",
+                  "/media"]  # 添加媒体文件路径
+    
+    # 使用前缀匹配而不是精确匹配
+    if request.method == "OPTIONS":
+        return True
+    
+    # 获取当前请求路径
+    current_path = request.url.path.rstrip('/')  # 去除末尾的斜杠
+    
+    # 检查是否匹配任一跳过路径
+    for skip_path in skip_paths:
+        # 对比去除末尾斜杠后的路径或检查是否为前缀
+        if current_path == skip_path.rstrip('/') or current_path.startswith(f"{skip_path}/"):
+            return True
+    
+    return False
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
