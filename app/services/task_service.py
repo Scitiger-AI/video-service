@@ -106,16 +106,18 @@ class TaskService:
             if len(result["result"]["videos"]) > 0 and "local_path" in result["result"]["videos"][0]:
                 main_video = result["result"]["videos"][0]
                 file_path = main_video["local_path"]
-                relative_url, download_url = FileUtils.get_urls_from_path(file_path)
+                relative_url, download_url, url = FileUtils.get_urls_from_path(file_path)
                 result["result"]["file_url"] = relative_url
+                result["result"]["url"] = url
                 result["result"]["download_url"] = download_url
             
             # 处理所有视频
             for video in result["result"]["videos"]:
                 if "local_path" in video:
                     file_path = video["local_path"]
-                    relative_url, download_url = FileUtils.get_urls_from_path(file_path)
+                    relative_url, download_url, url = FileUtils.get_urls_from_path(file_path)
                     video["file_url"] = relative_url
+                    video["url"] = url
                     video["download_url"] = download_url
         
         return result
