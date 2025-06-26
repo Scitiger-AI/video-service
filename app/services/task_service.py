@@ -108,7 +108,7 @@ class TaskService:
                 file_path = main_video["local_path"]
                 relative_url, download_url, url = FileUtils.get_urls_from_path(file_path)
                 result["result"]["file_url"] = relative_url
-                result["result"]["url"] = url
+                result["result"]["full_url"] = url
                 result["result"]["download_url"] = download_url
             
             # 处理所有视频
@@ -117,7 +117,7 @@ class TaskService:
                     file_path = video["local_path"]
                     relative_url, download_url, url = FileUtils.get_urls_from_path(file_path)
                     video["file_url"] = relative_url
-                    video["url"] = url
+                    video["full_url"] = url
                     video["download_url"] = download_url
         
         return result
