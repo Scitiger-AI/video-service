@@ -75,7 +75,9 @@ class TaskService:
             "task_id": task["_id"],
             "status": task["status"],
             "created_at": task["created_at"],
-            "updated_at": task["updated_at"]
+            "updated_at": task["updated_at"],
+            "retry_count": task.get("retry_count", 0),
+            "retry_info": task.get("retry_info")
         }
     
     async def get_task_result(self, task_id: str) -> Optional[Dict[str, Any]]:
@@ -97,28 +99,14 @@ class TaskService:
             "task_id": task["_id"],
             "status": task["status"],
             "result": task.get("result"),
-            "error": task.get("error")
+            "error": task.get("error"),
+            "retry_count": task.get("retry_count", 0),
+            "retry_info": task.get("retry_info")
         }
         
         # 转换结果中的文件路径为URL
-        if result.get("result") and isinstance(result["result"], dict) and "videos" in result["result"] and isinstance(result["result"]["videos"], list):
-            # 处理第一个视频作为主要结果
-            if len(result["result"]["videos"]) > 0 and "local_path" in result["result"]["videos"][0]:
-                main_video = result["result"]["videos"][0]
-                file_path = main_video["local_path"]
-                relative_url, download_url, url = FileUtils.get_urls_from_path(file_path)
-                result["result"]["file_url"] = relative_url
-                result["result"]["full_url"] = url
-                result["result"]["download_url"] = download_url
-            
-            # 处理所有视频
-            for video in result["result"]["videos"]:
-                if "local_path" in video:
-                    file_path = video["local_path"]
-                    relative_url, download_url, url = FileUtils.get_urls_from_path(file_path)
-                    video["file_url"] = relative_url
-                    video["full_url"] = url
-                    video["download_url"] = download_url
+        if result.get("result"):
+            result["result"] = FileUtils.convert_path_to_urls(result["result"])
         
         return result
     

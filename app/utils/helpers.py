@@ -281,6 +281,26 @@ class FileUtils:
         import copy
         result_copy = copy.deepcopy(result)
         
+        # 处理videos字段中的本地路径
+        if "videos" in result_copy and isinstance(result_copy["videos"], list):
+            # 处理第一个视频作为主要结果
+            if len(result_copy["videos"]) > 0 and "local_path" in result_copy["videos"][0]:
+                main_video = result_copy["videos"][0]
+                file_path = main_video["local_path"]
+                relative_url, download_url, url = cls.get_urls_from_path(file_path)
+                result_copy["file_url"] = relative_url
+                result_copy["full_url"] = url
+                result_copy["download_url"] = download_url
+            
+            # 处理所有视频
+            for video in result_copy["videos"]:
+                if "local_path" in video:
+                    file_path = video["local_path"]
+                    relative_url, download_url, url = cls.get_urls_from_path(file_path)
+                    video["file_url"] = relative_url
+                    video["full_url"] = url
+                    video["download_url"] = download_url
+            
         # 处理output_path字段
         if "output_path" in result_copy:
             file_path = result_copy.pop("output_path")  # 移除原始路径
@@ -308,6 +328,14 @@ class FileUtils:
             # 根据情况决定是否删除原始路径
             # 在本实现中，我们保留原始路径，因为它可能在内部使用
             # result_copy.pop("output_paths")
+            
+        # 处理通用的 local_path 字段
+        if "local_path" in result_copy:
+            file_path = result_copy["local_path"]
+            relative_url, download_url, url = cls.get_urls_from_path(file_path)
+            result_copy["file_url"] = relative_url
+            result_copy["full_url"] = url
+            result_copy["download_url"] = download_url
         
         return result_copy
     
