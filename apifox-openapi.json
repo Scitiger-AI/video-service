@@ -1,0 +1,1292 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Video Service API",
+    "description": "视频模型调用服务 - 支持多种视频生成模型，包括阿里云通义万相、智谱AI等",
+    "version": "0.1.0",
+    "contact": {
+      "name": "SciTiger AI Team"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://service.scitiger.cn/video-service",
+      "description": "生产环境"
+    },
+    {
+      "url": "http://127.0.0.1:8002",
+      "description": "本地开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "health",
+      "description": "健康检查"
+    },
+    {
+      "name": "models",
+      "description": "模型管理"
+    },
+    {
+      "name": "tasks",
+      "description": "任务管理"
+    },
+    {
+      "name": "download",
+      "description": "文件下载"
+    }
+  ],
+  "paths": {
+    "/api/v1/health/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "健康检查",
+        "description": "检查服务健康状态和数据库连接",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "服务健康",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseBase"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Service is healthy. MongoDB: connected"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/": {
+      "get": {
+        "tags": ["models"],
+        "summary": "获取支持的模型列表",
+        "description": "获取系统支持的所有模型列表，按提供商分组",
+        "operationId": "get_supported_models",
+        "responses": {
+          "200": {
+            "description": "成功获取模型列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取支持的模型列表成功",
+                  "results": {
+                    "aliyun": [
+                      "wanx2.1-t2v-turbo",
+                      "wanx2.1-t2v-plus",
+                      "wanx2.1-i2v-turbo",
+                      "wanx2.1-i2v-plus",
+                      "wanx2.1-kf2v-plus"
+                    ],
+                    "zhipuai": [
+                      "cogvideox-2",
+                      "cogvideox-flash",
+                      "viduq1-text",
+                      "viduq1-image",
+                      "viduq1-start-end",
+                      "vidu2-image",
+                      "vidu2-start-end",
+                      "vidu2-reference"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/all": {
+      "get": {
+        "tags": ["models"],
+        "summary": "获取所有模型的平铺列表",
+        "description": "获取系统支持的所有模型的平铺列表",
+        "operationId": "get_all_models_flat",
+        "responses": {
+          "200": {
+            "description": "成功获取模型列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取所有模型成功",
+                  "results": {
+                    "models": [
+                      "wanx2.1-t2v-turbo",
+                      "wanx2.1-t2v-plus",
+                      "wanx2.1-i2v-turbo",
+                      "wanx2.1-i2v-plus",
+                      "wanx2.1-kf2v-plus",
+                      "cogvideox-2",
+                      "cogvideox-flash",
+                      "viduq1-text",
+                      "viduq1-image",
+                      "viduq1-start-end",
+                      "vidu2-image",
+                      "vidu2-start-end",
+                      "vidu2-reference"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/by-provider/{provider_name}": {
+      "get": {
+        "tags": ["models"],
+        "summary": "获取指定提供商的模型列表",
+        "description": "获取指定提供商支持的模型列表",
+        "operationId": "get_provider_models",
+        "parameters": [
+          {
+            "name": "provider_name",
+            "in": "path",
+            "required": true,
+            "description": "提供商名称（aliyun 或 zhipuai）",
+            "schema": {
+              "type": "string",
+              "enum": ["aliyun", "zhipuai"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取模型列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取提供商 aliyun 的模型列表成功",
+                  "results": {
+                    "aliyun": [
+                      "wanx2.1-t2v-turbo",
+                      "wanx2.1-t2v-plus",
+                      "wanx2.1-i2v-turbo",
+                      "wanx2.1-i2v-plus",
+                      "wanx2.1-kf2v-plus"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "提供商不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/": {
+      "post": {
+        "tags": ["tasks"],
+        "summary": "创建视频生成任务",
+        "description": "创建新的视频模型调用任务",
+        "operationId": "create_task",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreate"
+              },
+              "examples": {
+                "aliyun-t2v-turbo": {
+                  "summary": "阿里云通义万相文本生成视频-快速版",
+                  "value": {
+                    "model": "wanx2.1-t2v-turbo",
+                    "provider": "aliyun",
+                    "parameters": {
+                      "prompt": "一只可爱的小猫咪在草地上玩耍",
+                      "negative_prompt": "模糊, 扭曲, 低质量",
+                      "duration": 5,
+                      "resolution": "720P"
+                    },
+                    "is_async": true
+                  }
+                },
+                "aliyun-t2v-plus": {
+                  "summary": "阿里云通义万相文本生成视频-高质量版",
+                  "value": {
+                    "model": "wanx2.1-t2v-plus",
+                    "provider": "aliyun",
+                    "parameters": {
+                      "prompt": "宇航员在月球上行走，高清，写实风格",
+                      "negative_prompt": "模糊, 低质量",
+                      "duration": 5,
+                      "resolution": "720P",
+                      "prompt_extend": true
+                    },
+                    "is_async": true
+                  }
+                },
+                "aliyun-i2v-turbo": {
+                  "summary": "阿里云通义万相图生视频(基于首帧)-快速版",
+                  "value": {
+                    "model": "wanx2.1-i2v-turbo",
+                    "provider": "aliyun",
+                    "parameters": {
+                      "prompt": "使图片动起来，高清效果",
+                      "img_url": "https://example.com/source-image.jpg",
+                      "duration": 5,
+                      "resolution": "720P"
+                    },
+                    "is_async": true
+                  }
+                },
+                "aliyun-i2v-plus": {
+                  "summary": "阿里云通义万相图生视频(基于首帧)-高质量版",
+                  "value": {
+                    "model": "wanx2.1-i2v-plus",
+                    "provider": "aliyun",
+                    "parameters": {
+                      "prompt": "让图片中的场景动起来，添加自然的动态效果",
+                      "img_url": "https://example.com/source-image.jpg",
+                      "duration": 5,
+                      "resolution": "720P",
+                      "prompt_extend": false
+                    },
+                    "is_async": true
+                  }
+                },
+                "aliyun-kf2v": {
+                  "summary": "阿里云通义万相首尾帧生成视频",
+                  "value": {
+                    "model": "wanx2.1-kf2v-plus",
+                    "provider": "aliyun",
+                    "parameters": {
+                      "prompt": "一个女孩从森林中漫步而出，脸上洋溢着喜悦的笑容",
+                      "first_frame_url": "https://example.com/first-frame.jpg",
+                      "last_frame_url": "https://example.com/last-frame.jpg",
+                      "resolution": "720P",
+                      "obj_or_bg": ["obj", "bg"]
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-cogvideox-2": {
+                  "summary": "智谱AI CogVideoX文本生成视频-标准版",
+                  "value": {
+                    "model": "cogvideox-2",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "prompt": "一只狗狗在海边奔跑，阳光明媚，细节丰富，4K",
+                      "quality": "quality",
+                      "size": "1080x1920",
+                      "fps": 30
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-cogvideox-flash": {
+                  "summary": "智谱AI CogVideoX文本生成视频-快速版",
+                  "value": {
+                    "model": "cogvideox-flash",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "prompt": "日落时分，海浪拍打着沙滩，天空渐变色彩绚丽",
+                      "quality": "standard",
+                      "size": "1080x1920",
+                      "fps": 24
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-cogvideox-i2v": {
+                  "summary": "智谱AI CogVideoX图生视频",
+                  "value": {
+                    "model": "cogvideox-2",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "prompt": "让图片动起来，高品质动态效果",
+                      "image_url": "https://example.com/source-image.jpg",
+                      "quality": "quality",
+                      "size": "1080x1920",
+                      "fps": 30
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-viduq1-text": {
+                  "summary": "智谱AI Vidu文本生成视频",
+                  "value": {
+                    "model": "viduq1-text",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "prompt": "比得兔开小汽车，游走在马路上，脸上的表情充满开心喜悦",
+                      "style": "anime",
+                      "duration": "5",
+                      "size": "1080x1920",
+                      "movement_amplitude": "auto"
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-viduq1-image": {
+                  "summary": "智谱AI Vidu图像生成视频",
+                  "value": {
+                    "model": "viduq1-image",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "image_url": "https://example.com/source-image.jpg",
+                      "prompt": "增加动态效果，让画面生动起来",
+                      "duration": "5",
+                      "size": "1080x1920",
+                      "movement_amplitude": "medium"
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-viduq1-start-end": {
+                  "summary": "智谱AI Vidu首尾帧生成视频",
+                  "value": {
+                    "model": "viduq1-start-end",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "image_url": ["https://example.com/first-frame.jpg", "https://example.com/last-frame.jpg"],
+                      "prompt": "平滑过渡，自然衔接",
+                      "duration": "5",
+                      "size": "720x480",
+                      "movement_amplitude": "medium"
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-vidu2-image": {
+                  "summary": "智谱AI Vidu V2图像生成视频",
+                  "value": {
+                    "model": "vidu2-image",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "image_url": "https://example.com/source-image.jpg",
+                      "prompt": "增加动态效果，高质量生成",
+                      "duration": "4",
+                      "size": "1080x1920",
+                      "movement_amplitude": "auto",
+                      "with_audio": true
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-vidu2-start-end": {
+                  "summary": "智谱AI Vidu V2首尾帧生成视频",
+                  "value": {
+                    "model": "vidu2-start-end",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "image_url": ["https://example.com/first-frame.jpg", "https://example.com/last-frame.jpg"],
+                      "prompt": "平滑过渡，高质量生成",
+                      "duration": "4",
+                      "size": "720x480",
+                      "movement_amplitude": "medium",
+                      "with_audio": true
+                    },
+                    "is_async": true
+                  }
+                },
+                "zhipuai-vidu2-reference": {
+                  "summary": "智谱AI Vidu V2参考主体生成视频",
+                  "value": {
+                    "model": "vidu2-reference",
+                    "provider": "zhipuai",
+                    "parameters": {
+                      "image_url": ["https://example.com/reference-image1.jpg", "https://example.com/reference-image2.jpg"],
+                      "prompt": "根据参考图像生成视频，保持角色特征",
+                      "duration": "4",
+                      "aspect_ratio": "16:9",
+                      "size": "720x480",
+                      "movement_amplitude": "auto",
+                      "with_audio": true
+                    },
+                    "is_async": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "任务创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "任务已创建",
+                  "data": {
+                    "task_id": "685008a3404376ca4660b24a"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未授权",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["tasks"],
+        "summary": "获取任务列表",
+        "description": "获取任务列表，支持分页和过滤",
+        "operationId": "list_tasks",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "任务状态",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "running", "completed", "failed", "cancelled", "retrying"]
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "模型名称",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "description": "排序字段，'-'前缀表示降序",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "-created_at"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取任务列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskListResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取任务列表成功",
+                  "data": {
+                    "total": 25,
+                    "page_size": 10,
+                    "current_page": 1,
+                    "total_pages": 3,
+                    "next": "http://localhost:8002/api/v1/tasks/?page=2&page_size=10",
+                    "previous": null,
+                    "tasks": [
+                      {
+                        "task_id": "685008a3404376ca4660b24a",
+                        "status": "completed",
+                        "model": "wanx2.1-t2v-turbo",
+                        "created_at": "2025-06-16T20:08:58",
+                        "updated_at": "2025-06-16T20:09:30"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}/status": {
+      "get": {
+        "tags": ["tasks"],
+        "summary": "获取任务状态",
+        "description": "获取指定任务的状态信息",
+        "operationId": "get_task_status",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "任务ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取任务状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskStatusResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取任务状态成功",
+                  "data": {
+                    "task_id": "685008a3404376ca4660b24a",
+                    "status": "running",
+                    "created_at": "2025-06-16T20:08:58",
+                    "updated_at": "2025-06-16T20:09:00",
+                    "retry_count": 0,
+                    "retry_info": null
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "任务不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}/result": {
+      "get": {
+        "tags": ["tasks"],
+        "summary": "获取任务结果",
+        "description": "获取指定任务的结果信息",
+        "operationId": "get_task_result",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "任务ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取任务结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResultResponse"
+                },
+                "examples": {
+                  "aliyun-result": {
+                    "summary": "阿里云通义万相视频生成结果",
+                    "value": {
+                      "success": true,
+                      "message": "获取任务结果成功",
+                      "data": {
+                        "task_id": "685008a3404376ca4660b24a",
+                        "status": "completed",
+                        "result": {
+                          "id": "d9d2877c-06b8-9df5-8246-2dadbedcf9ba",
+                          "model": "wanx2.1-t2v-turbo",
+                          "created": "2025-06-16 20:08:58",
+                          "videos": [
+                            {
+                              "index": 0,
+                              "url": "https://dashscope-result.oss-cn-beijing.aliyuncs.com/videos/2025/06/16/xxxx-xxxx-xxxx.mp4",
+                              "local_path": "/Users/alanfu/Documents/projects/sciTigerService/video-service/data/videos/aliyun_20250616_200858_0_a1b2c3d4.mp4",
+                              "media_url": "http://127.0.0.1:8086/media/videos/aliyun_20250616_200858_0_a1b2c3d4.mp4",
+                              "duration": 5
+                            }
+                          ],
+                          "prompt": "一只可爱的小猫咪在草地上玩耍",
+                          "actual_prompt": "一只可爱的小猫咪在草地上玩耍，高清画质，细节丰富",
+                          "resolution": "720P",
+                          "usage": {
+                            "video_count": 1,
+                            "video_duration": 5,
+                            "video_ratio": "standard"
+                          }
+                        },
+                        "error": null,
+                        "retry_count": 0,
+                        "retry_info": null
+                      }
+                    }
+                  },
+                  "zhipuai-result": {
+                    "summary": "智谱AI视频生成结果",
+                    "value": {
+                      "success": true,
+                      "message": "获取任务结果成功",
+                      "data": {
+                        "task_id": "685008a3404376ca4660b24b",
+                        "status": "completed",
+                        "result": {
+                          "id": "video-20250616-001",
+                          "model": "cogvideox-2",
+                          "created": "2025-06-16 20:10:00",
+                          "videos": [
+                            {
+                              "index": 0,
+                              "url": "https://zhipuai-online.com/videos/xxxx-xxxx-xxxx.mp4",
+                              "local_path": "/Users/alanfu/Documents/projects/sciTigerService/video-service/data/videos/zhipuai_20250616_201000_0_b2c3d4e5.mp4",
+                              "media_url": "http://127.0.0.1:8086/media/videos/zhipuai_20250616_201000_0_b2c3d4e5.mp4",
+                              "duration": 6
+                            }
+                          ],
+                          "prompt": "一只狗狗在海边奔跑，阳光明媚，细节丰富，4K",
+                          "size": "1080x1920",
+                          "fps": 30,
+                          "usage": {
+                            "video_count": 1
+                          }
+                        },
+                        "error": null,
+                        "retry_count": 0,
+                        "retry_info": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "任务不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}/cancel": {
+      "post": {
+        "tags": ["tasks"],
+        "summary": "取消任务",
+        "description": "取消指定的任务",
+        "operationId": "cancel_task",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "任务ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "任务取消成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCancelResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "任务已取消",
+                  "data": {
+                    "task_id": "685008a3404376ca4660b24a"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "任务不存在或已取消/已完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/download/{file_name}": {
+      "get": {
+        "tags": ["download"],
+        "summary": "下载文件",
+        "description": "下载生成的视频文件",
+        "operationId": "download_file",
+        "parameters": [
+          {
+            "name": "file_name",
+            "in": "path",
+            "required": true,
+            "description": "文件名",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "文件下载成功",
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/webm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/quicktime": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "文件不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "用户JWT令牌认证"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API密钥认证"
+      }
+    },
+    "schemas": {
+      "ResponseBase": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          }
+        },
+        "required": ["success", "message"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功",
+            "default": false
+          },
+          "message": {
+            "type": "string",
+            "description": "错误消息"
+          },
+          "error_code": {
+            "type": "string",
+            "description": "错误代码"
+          },
+          "details": {
+            "type": "object",
+            "description": "错误详情"
+          }
+        },
+        "required": ["success", "message"]
+      },
+      "ModelsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "results": {
+            "type": "object",
+            "description": "模型列表数据",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": ["success", "message", "results"]
+      },
+      "TaskCreate": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "模型名称",
+            "default": "wanx2.1-t2v-turbo",
+            "enum": [
+              "wanx2.1-t2v-turbo",
+              "wanx2.1-t2v-plus",
+              "wanx2.1-i2v-turbo",
+              "wanx2.1-i2v-plus",
+              "wanx2.1-kf2v-plus",
+              "cogvideox-2",
+              "cogvideox-flash",
+              "viduq1-text",
+              "viduq1-image",
+              "viduq1-start-end",
+              "vidu2-image",
+              "vidu2-start-end",
+              "vidu2-reference"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "description": "提供商",
+            "default": "aliyun",
+            "enum": ["aliyun", "zhipuai"]
+          },
+          "parameters": {
+            "type": "object",
+            "description": "模型参数，根据不同模型有不同的参数",
+            "additionalProperties": true
+          },
+          "is_async": {
+            "type": "boolean",
+            "description": "是否异步执行",
+            "default": true
+          }
+        },
+        "required": ["model", "provider", "parameters"]
+      },
+      "TaskResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "description": "任务ID"
+              }
+            }
+          }
+        },
+        "required": ["success", "message", "data"]
+      },
+      "TaskStatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "description": "任务ID"
+              },
+              "status": {
+                "type": "string",
+                "description": "任务状态",
+                "enum": ["pending", "running", "completed", "failed", "cancelled", "retrying"]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "创建时间"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "更新时间"
+              },
+              "retry_count": {
+                "type": "integer",
+                "description": "重试次数"
+              },
+              "retry_info": {
+                "type": "string",
+                "description": "重试信息"
+              }
+            }
+          }
+        },
+        "required": ["success", "message", "data"]
+      },
+      "TaskResultResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "description": "任务ID"
+              },
+              "status": {
+                "type": "string",
+                "description": "任务状态",
+                "enum": ["pending", "running", "completed", "failed", "cancelled", "retrying"]
+              },
+              "result": {
+                "type": "object",
+                "description": "任务结果",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "结果ID"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "使用的模型"
+                  },
+                  "created": {
+                    "type": "string",
+                    "description": "创建时间"
+                  },
+                  "videos": {
+                    "type": "array",
+                    "description": "生成的视频列表",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "index": {
+                          "type": "integer",
+                          "description": "视频索引"
+                        },
+                        "url": {
+                          "type": "string",
+                          "description": "原始视频URL"
+                        },
+                        "local_path": {
+                          "type": "string",
+                          "description": "本地保存路径"
+                        },
+                        "media_url": {
+                          "type": "string",
+                          "description": "媒体访问URL"
+                        },
+                        "duration": {
+                          "type": "number",
+                          "description": "视频时长（秒）"
+                        }
+                      }
+                    }
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "使用的提示词"
+                  },
+                  "actual_prompt": {
+                    "type": "string",
+                    "description": "实际使用的提示词（扩展后）"
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "description": "视频分辨率"
+                  },
+                  "size": {
+                    "type": "string",
+                    "description": "视频尺寸"
+                  },
+                  "fps": {
+                    "type": "integer",
+                    "description": "帧率"
+                  },
+                  "usage": {
+                    "type": "object",
+                    "description": "使用统计",
+                    "properties": {
+                      "video_count": {
+                        "type": "integer",
+                        "description": "生成的视频数量"
+                      },
+                      "video_duration": {
+                        "type": "number",
+                        "description": "总视频时长"
+                      },
+                      "video_ratio": {
+                        "type": "string",
+                        "description": "视频比例"
+                      }
+                    }
+                  }
+                }
+              },
+              "error": {
+                "type": "string",
+                "description": "错误信息"
+              },
+              "retry_count": {
+                "type": "integer",
+                "description": "重试次数"
+              },
+              "retry_info": {
+                "type": "string",
+                "description": "重试信息"
+              }
+            }
+          }
+        },
+        "required": ["success", "message", "data"]
+      },
+      "TaskListItem": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "任务ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "任务状态",
+            "enum": ["pending", "running", "completed", "failed", "cancelled", "retrying"]
+          },
+          "model": {
+            "type": "string",
+            "description": "模型名称"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        },
+        "required": ["task_id", "status", "model", "created_at", "updated_at"]
+      },
+      "TaskListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "description": "总记录数"
+              },
+              "page_size": {
+                "type": "integer",
+                "description": "每页记录数"
+              },
+              "current_page": {
+                "type": "integer",
+                "description": "当前页码"
+              },
+              "total_pages": {
+                "type": "integer",
+                "description": "总页数"
+              },
+              "next": {
+                "type": "string",
+                "description": "下一页URL"
+              },
+              "previous": {
+                "type": "string",
+                "description": "上一页URL"
+              },
+              "tasks": {
+                "type": "array",
+                "description": "任务列表",
+                "items": {
+                  "$ref": "#/components/schemas/TaskListItem"
+                }
+              }
+            }
+          }
+        },
+        "required": ["success", "message", "data"]
+      },
+      "TaskCancelResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "description": "任务ID"
+              }
+            }
+          }
+        },
+        "required": ["success", "message", "data"]
+      }
+    }
+  }
+}
+
